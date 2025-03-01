@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Dashboard API - Developer Guide</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 900px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      line-height: 1.6; 
+    }
+    h1, h2, h3 { 
+      color: #333; 
+    }
+    code { 
+      background: #f4f4f4; 
+      padding: 2px 4px; 
+      border-radius: 3px; 
+      font-family: monospace; 
+    }
+    pre { 
+      background: #f4f4f4; 
+      padding: 15px; 
+      border-radius: 5px; 
+      overflow-x: auto; 
+    }
+    .tip { 
+      background: #e8f4ff; 
+      padding: 15px; 
+      border-left: 5px solid #0066cc; 
+      margin: 20px 0; 
+    }
+  </style>
+</head>
+<body>
+  <h1>Wallet Dashboard API - Developer Guide</h1>
+  
+  <h2>Overview</h2>
+  <p>This API provides wallet data from multiple blockchains, integrates with Coinbase, and supports NFT data retrieval.</p>
+  
+  <h2>Quick Start</h2>
+  <pre>
+# Install dependencies
+npm install
+
+# Set environment variables
+cp .env.example .env
+# Edit .env with your API keys
+
+# Start the server
+npm start
+  </pre>
+  
+  <h2>API Keys Required</h2>
+  <ul>
+    <li><b>Moralis API Key</b> - Required for blockchain data</li>
+    <li><b>GoldRush API Key</b> - Optional for DeFi position data</li>
+    <li><b>Coinbase OAuth Credentials</b> - Optional for Coinbase integration</li>
+  </ul>
+  
+  <div class="tip">
+    <p><b>Tip:</b> If you're seeing 401 errors, make sure your Moralis API key is valid and has not expired.</p>
+  </div>
+  
+  <h2>Common Issues & Solutions</h2>
+  
+  <h3>Error: Request failed with status code 400</h3>
+  <p>This typically happens when:</p>
+  <ul>
+    <li>The wallet address format is invalid</li>
+    <li>The chain parameter is not supported</li>
+    <li>The wallet has too many transactions for the default limit</li>
+  </ul>
+  <p>Solution: Use the /api/test endpoint to test your parameters one by one.</p>
+  
+  <h3>Error: Request failed with status code 429</h3>
+  <p>You've exceeded the API rate limits.</p>
+  <p>Solution: Implement retry logic with exponential backoff.</p>
+  
+  <h2>Debugging Tips</h2>
+  <ul>
+    <li>Use the <code>/api/status</code> endpoint to check API dependencies</li>
+    <li>Check the server logs for detailed error messages</li>
+    <li>Try smaller networks first (e.g., 'optimism' or 'base' instead of 'ethereum')</li>
+  </ul>
+  
+  <h2>Project Structure</h2>
+  <pre>
+wallet-dashboard-api/
+├── config/                   # Configuration files
+│   └── environment.js        # Environment variables setup
+├── controllers/              # Route handlers/controllers
+│   ├── dashboard.controller.js  # Dashboard endpoints
+│   ├── status.controller.js     # API status endpoint
+│   └── ...                      # Other controllers
+├── middleware/               # Custom middleware
+│   ├── error-handler.js      # Error handling middleware
+│   └── logging.js            # Logging middleware
+├── routes/                   # Express routes
+│   ├── dashboard.routes.js   # Dashboard routes
+│   ├── coinbase.routes.js    # Coinbase routes
+│   └── ...                   # Other routes
+├── services/                 # Business logic and API interactions
+│   ├── moralis.service.js    # Moralis API service
+│   └── ...                   # Other services
+├── utils/                    # Utility functions
+│   ├── api-error.js          # Custom API error class
+│   └── chain-utils.js        # Chain related utilities
+├── public/                   # Static files
+│   └── index.html            # Home page HTML
+├── .env                      # Environment variables
+├── app.js                    # Express app setup
+└── server.js                 # Entry point
+  </pre>
+  
+  <h2>Need more help?</h2>
+  <p>Visit the API documentation at the <a href="/">homepage</a>.</p>
+  
+  <footer style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
+    <p>&copy; 2025 Wallet Dashboard API</p>
+  </footer>
+</body>
+</html>

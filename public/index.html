@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Dashboard API</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 800px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      line-height: 1.6; 
+      color: #333;
+    }
+    h1 { 
+      color: #333; 
+      border-bottom: 1px solid #ddd; 
+      padding-bottom: 10px; 
+    }
+    h2 { 
+      color: #444; 
+      margin-top: 30px; 
+    }
+    .endpoint { 
+      background: #f4f4f4; 
+      padding: 15px; 
+      border-radius: 5px; 
+      margin-bottom: 15px; 
+    }
+    .endpoint h3 { 
+      margin-top: 0; 
+    }
+    code { 
+      background: #eee; 
+      padding: 2px 5px; 
+      border-radius: 3px; 
+      font-family: monospace; 
+    }
+    .method { 
+      font-weight: bold; 
+      color: #0066cc; 
+    }
+    .tip {
+      background: #e8f4ff;
+      padding: 15px;
+      border-left: 5px solid #0066cc;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wallet Dashboard API</h1>
+  <p>This API provides access to blockchain wallet data across multiple networks.</p>
+  
+  <div class="tip">
+    <p><strong>Developer Guide:</strong> For more detailed information, check out the <a href="/readme">Developer Guide</a>.</p>
+  </div>
+  
+  <h2>Test Endpoints</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/test</h3>
+    <p>Test endpoint to verify API functionality.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>address</code> - Wallet address (required)</li>
+      <li><code>chain</code> - Blockchain network (default: eth)</li>
+    </ul>
+    <p><strong>Example:</strong> <a href="/api/test?address=0x28C6c06298d514Db089934071355E5743bf21d60&chain=eth">Test Ethereum Wallet</a></p>
+  </div>
+  
+  <h2>Dashboard Endpoints</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/dashboard</h3>
+    <p>Get comprehensive wallet dashboard data.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>address</code> - Wallet address (required)</li>
+      <li><code>networks</code> - Comma-separated list of networks (default: ethereum,polygon,bsc,optimism,arbitrum)</li>
+    </ul>
+    <p><strong>Example:</strong> <a href="/api/dashboard?address=0x28C6c06298d514Db089934071355E5743bf21d60">Full Dashboard</a></p>
+  </div>
+  
+  <h2>NFT Endpoints</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/nfts</h3>
+    <p>Get NFTs owned by a wallet address.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>address</code> - Wallet address (required)</li>
+      <li><code>chain</code> - Blockchain network (default: eth)</li>
+      <li><code>limit</code> - Number of NFTs to return (default: 20)</li>
+    </ul>
+    <p><strong>Example:</strong> <a href="/api/nfts?address=0x8ff1f9273e1073c7b3c7f853691b164fe88bd448&chain=eth">Get NFTs</a></p>
+  </div>
+  
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/nfts/:contractAddress/:tokenId</h3>
+    <p>Get details for a specific NFT.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>contractAddress</code> - NFT contract address (in URL)</li>
+      <li><code>tokenId</code> - NFT token ID (in URL)</li>
+      <li><code>chain</code> - Blockchain network (default: eth)</li>
+    </ul>
+    <p><strong>Example:</strong> <a href="/api/nfts/0x524cab2ec69124574082676e6f654a18df49a048/7603?chain=eth">Get NFT Details</a></p>
+  </div>
+  
+  <h2>GoldRush (formerly Covalent) Endpoints</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/goldrush/balances</h3>
+    <p>Get token balances from GoldRush API.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>address</code> - Wallet address (required)</li>
+      <li><code>chain</code> - Blockchain network (default: eth-mainnet)</li>
+    </ul>
+  </div>
+  
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/goldrush/protocols</h3>
+    <p>Get DeFi protocol positions from GoldRush API.</p>
+    <p><strong>Parameters:</strong></p>
+    <ul>
+      <li><code>address</code> - Wallet address (required)</li>
+      <li><code>chain</code> - Blockchain network (default: eth-mainnet)</li>
+    </ul>
+  </div>
+  
+  <h2>Coinbase Integration</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/coinbase/auth</h3>
+    <p>Authenticate with Coinbase.</p>
+    <p><strong>Example:</strong> <a href="/api/coinbase/auth">Connect Coinbase</a></p>
+  </div>
+  
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/coinbase/data</h3>
+    <p>Get Coinbase account data (requires authentication).</p>
+  </div>
+  
+  <h2>API Status</h2>
+  <div class="endpoint">
+    <h3><span class="method">GET</span> /api/status</h3>
+    <p>Check the health and status of API dependencies.</p>
+    <p><strong>Example:</strong> <a href="/api/status">Check API Status</a></p>
+  </div>
+  
+  <footer style="margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px;">
+    <p>&copy; 2025 Wallet Dashboard API</p>
+  </footer>
+</body>
+</html>
