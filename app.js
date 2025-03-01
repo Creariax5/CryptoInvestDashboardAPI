@@ -15,6 +15,9 @@ const coinbaseRoutes = require('./routes/coinbase.routes');
 const goldrushRoutes = require('./routes/goldrush.routes');
 const nftRoutes = require('./routes/nft.routes');
 const testRoutes = require('./routes/test.routes');
+const ankrRoutes = require('./routes/ankr.routes');
+const alchemyRoutes = require('./routes/alchemy.routes');
+const thegraphRoutes = require('./routes/thegraph.routes');
 
 // Initialize Express app
 const app = express();
@@ -42,10 +45,24 @@ app.use('/api/coinbase', coinbaseRoutes);
 app.use('/api/goldrush', goldrushRoutes);
 app.use('/api/nfts', nftRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/ankr', ankrRoutes);
+app.use('/api/alchemy', alchemyRoutes);
+app.use('/api/thegraph', thegraphRoutes);
 
-// Home route - simple landing page
+// Home route
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.send(`
+        <h1>Crypto Invest Dashboard API</h1>
+        <p>Welcome to the Crypto Invest Dashboard API. Use the endpoints below to access wallet data.</p>
+        <ul>
+            <li><a href="/api/dashboard">/api/dashboard</a> - Get comprehensive wallet dashboard data</li>
+            <li><a href="/api/goldrush/balances">/api/goldrush/balances</a> - Get token balances using Covalent API</li>
+            <li><a href="/api/ankr/balances">/api/ankr/balances</a> - Get token balances using Ankr API</li>
+            <li><a href="/api/alchemy/balances">/api/alchemy/balances</a> - Get token balances using Alchemy API</li>
+            <li><a href="/api/thegraph/balances">/api/thegraph/balances</a> - Get token balances using The Graph</li>
+            <li><a href="/api/status">/api/status</a> - Check API status</li>
+        </ul>
+    `);
 });
 
 // Status endpoint

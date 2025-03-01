@@ -1,132 +1,165 @@
-# Wallet Dashboard API Deployment Guide
+# Crypto Invest Dashboard API
 
-This guide explains how to deploy the Express.js Wallet Dashboard API to Vercel.
+A comprehensive API for fetching cryptocurrency wallet data across multiple chains and data providers.
 
-## Prerequisites
+## Features
 
-1. [Node.js](https://nodejs.org/) 14.x or later
-2. [Vercel CLI](https://vercel.com/download) installed (`npm i -g vercel`)
-3. A Vercel account
-4. API keys from Moralis, Covalent, and Coinbase (if using Coinbase integration)
+- Multi-chain wallet data retrieval
+- Support for multiple data providers:
+  - Moralis
+  - Covalent (GoldRush)
+  - Ankr Advanced API
+  - Alchemy
+  - The Graph
+- Token balances
+- Transaction history
+- DeFi positions
+- Gas fee analysis
 
-## Local Development
+## Installation
 
-1. Clone the repository and navigate to the project folder
-2. Create a `.env` file based on `.env.example`
-3. Install dependencies:
-   ```bash
+1. Clone the repository
+2. Install dependencies:
+   ```
    npm install
    ```
-4. Start the development server:
-   ```bash
-   npm run dev
+3. Copy `.env.example` to `.env` and fill in your API keys:
    ```
-5. The API will be available at `http://localhost:3000`
-
-## Deploying to Vercel
-
-### Option 1: Using Vercel CLI (Recommended for first deployment)
-
-1. Make sure you're logged in to Vercel CLI:
-   ```bash
-   vercel login
+   cp .env.example .env
+   ```
+4. Start the server:
+   ```
+   npm start
    ```
 
-2. Deploy from the project directory:
-   ```bash
-   vercel
-   ```
+## API Endpoints
 
-3. Follow the prompts to set up the project.
+### Dashboard
 
-4. When prompted to add environment variables, add all the variables from your `.env` file.
+- `GET /api/dashboard/wallet` - Get comprehensive wallet dashboard data
+  - Query parameters:
+    - `address` - Wallet address (required)
+    - `networks` - Comma-separated list of networks (optional, default: ethereum,polygon,bsc,optimism,arbitrum)
 
-5. Once deployed, you'll get a URL for your API.
+### Token Balances
 
-### Option 2: Using Vercel Dashboard
+#### Covalent (GoldRush)
 
-1. Push your code to a GitHub, GitLab, or Bitbucket repository
+- `GET /api/goldrush/balances` - Get token balances using Covalent API
+  - Query parameters:
+    - `address` - Wallet address (required)
+    - `networks` - Comma-separated list of networks (optional, default: ethereum)
 
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+#### Ankr Advanced API
 
-3. Click "New Project"
+- `GET /api/ankr/balances` - Get token balances using Ankr Multi-chain API
+  - Query parameters:
+    - `address` - Wallet address (required)
+    - `networks` - Comma-separated list of networks (optional, default: ethereum)
+  - Features:
+    - Single entry point for all supported blockchains
+    - Query archive data at near-instant speeds
+    - Interact with multiple chains in a single request
+    - Supports over 70 blockchains including EVM and non-EVM chains
+  - Available SDKs:
+    - JavaScript: `npm install @ankr.com/ankr.js`
+    - Python: `pip install ankr-sdk`
+    - React: `npm install @ankr.com/react-hooks`
+  - Documentation: https://www.ankr.com/docs/advanced-api/
 
-4. Import your repository
+#### Alchemy
 
-5. Configure the project:
-   - Framework Preset: `Other`
-   - Root Directory: `./` (or appropriate directory if in a monorepo)
-   - Build Command: `npm install`
-   - Output Directory: `.`
+- `GET /api/alchemy/balances` - Get token balances using Alchemy API
+  - Query parameters:
+    - `address` - Wallet address (required)
+    - `networks` - Comma-separated list of networks (optional, default: ethereum)
 
-6. Add environment variables from your `.env` file
+#### The Graph
 
-7. Click "Deploy"
+- `GET /api/thegraph/balances` - Get token balances using The Graph
+  - Query parameters:
+    - `address` - Wallet address (required)
+    - `networks` - Comma-separated list of networks (optional, default: ethereum)
 
-## Setting Environment Variables
+### Other Endpoints
 
-Make sure to set the following environment variables in the Vercel project settings:
+- `GET /api/status` - Check API status
 
-- `PORT`: Not required for Vercel, it will manage the port automatically
-- `NODE_ENV`: Set to `production` for production deployments
-- `API_BASE_URL`: Your deployed API URL (e.g., `https://your-api.vercel.app`)
-- `FRONTEND_URL`: URL of your frontend app
-- `SESSION_SECRET`: Secret key for session management
-- `MORALIS_API_KEY`: Your Moralis API key
-- `COVALENT_API_KEY`: Your Covalent API key
-- `COINBASE_CLIENT_ID`: Your Coinbase OAuth client ID (if using Coinbase integration)
-- `COINBASE_CLIENT_SECRET`: Your Coinbase OAuth client secret (if using Coinbase integration)
+## Response Format
 
-## Session Management for Production
+All API endpoints return data in the following format:
 
-For production, you should use a more robust session store instead of the default memory store:
+```json
+{
+  "success": true,
+  "address": "0x...",
+  "networks": ["ethereum", "polygon"],
+  "tokens": [
+    {
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "address": "0x...",
+      "decimals": 18,
+      "balance": 1.5,
+      "price": 3000,
+      "value": 4500,
+      "priceChange24h": 2.5,
+      "network": "Ethereum",
+      "type": "native",
+      "icon": "https://..."
+    },
+    // More tokens...
+  ]
+}
+```
 
-1. Install a compatible session store (example using Redis):
-   ```bash
-   npm install connect-redis redis
-   ```
+## Error Handling
 
-2. Update `index.js` to use the Redis store:
-   ```javascript
-   const session = require('express-session');
-   const RedisStore = require('connect-redis').default;
-   const { createClient } = require('redis');
+In case of an error, the API will return:
 
-   // Initialize Redis client
-   const redisClient = createClient({
-     url: process.env.REDIS_URL
-   });
-   redisClient.connect().catch(console.error);
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
 
-   // Initialize session middleware with Redis store
-   app.use(session({
-     store: new RedisStore({ client: redisClient }),
-     secret: process.env.SESSION_SECRET,
-     resave: false,
-     saveUninitialized: false,
-     cookie: { 
-       secure: process.env.NODE_ENV === 'production',
-       maxAge: 24 * 60 * 60 * 1000 // 1 day
-     }
-   }));
-   ```
+## Supported Networks
 
-3. Add `REDIS_URL` to your environment variables with a connection string to your Redis instance.
+### EVM Networks
+- Ethereum (ethereum)
+- Polygon (polygon)
+- Binance Smart Chain (bsc)
+- Optimism (optimism)
+- Arbitrum (arbitrum)
+- Avalanche (avalanche)
+- Fantom (fantom)
+- Gnosis (gnosis)
+- Base (base)
+- Aurora (aurora)
+- Celo (celo)
+- Cronos (cronos)
+- Harmony (harmony)
+- Metis (metis)
+- Moonbeam (moonbeam)
+- Moonriver (moonriver)
+- zkSync (zksync)
+- Linea (linea)
+- Scroll (scroll)
+- Mantle (mantle)
 
-## Troubleshooting
+### Non-EVM Networks (Ankr only)
+- Solana (solana)
+- NEAR (near)
+- Polkadot (polkadot)
+- Kusama (kusama)
+- Bitcoin (bitcoin)
+- Filecoin (filecoin)
+- Cosmos (cosmos)
+- Osmosis (osmosis)
 
-If you encounter issues during deployment:
+Note: Not all networks are supported by all data providers.
 
-1. Check the Vercel deployment logs in your dashboard
+## License
 
-2. Verify all environment variables are correctly set
-
-3. For Coinbase OAuth issues, ensure the redirect URI in your Coinbase app settings matches your API's callback URL: `https://your-api.vercel.app/api/coinbase/callback`
-
-4. For CORS issues, make sure your frontend domain is properly configured in the CORS middleware
-
-## Monitoring and Scaling
-
-- Monitor API usage through Vercel Analytics
-- Add proper error logging using services like Sentry
-- For high-traffic applications, consider adding a caching layer
+ISC

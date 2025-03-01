@@ -1,5 +1,5 @@
-// controllers/goldrush.controller.js - GoldRush (Covalent) API controller
-const goldrushService = require('../services/goldrush.service');
+// controllers/thegraph.controller.js - The Graph API controller
+const thegraphService = require('../services/thegraph.service');
 
 /**
  * Get token balances for a wallet address
@@ -22,8 +22,8 @@ async function getBalances(req, res) {
         // Parse networks parameter
         const networkList = networks ? networks.split(',') : ['ethereum'];
         
-        // Get token balances from GoldRush service
-        const balances = await goldrushService.getTokenBalances(address, networkList);
+        // Get token balances from The Graph service
+        const balances = await thegraphService.getTokenBalances(address, networkList);
         
         // Return the balances
         return res.status(200).json({
@@ -41,21 +41,6 @@ async function getBalances(req, res) {
     }
 }
 
-/**
- * Get protocol data for a wallet address
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @returns {Object} Protocol data
- */
-async function getProtocols(req, res) {
-    // This is a placeholder for future implementation
-    return res.status(200).json({ 
-        success: true,
-        message: 'GoldRush protocols route (placeholder)' 
-    });
-}
-
 module.exports = {
-    getBalances,
-    getProtocols
-};
+    getBalances
+}; 
