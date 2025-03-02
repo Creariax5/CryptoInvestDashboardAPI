@@ -32,18 +32,42 @@ async function getWalletBalances(address, networks) {
         headers: { 'X-API-Key': MORALIS_API_KEY }
       });
       
-      if (response.data && Array.isArray(response.data)) {
-        console.log(`✅ Found ${response.data.length} tokens on ${network}`);
+      // Validate the response structure
+      if (!response.data) {
+        console.error(`Moralis API Error (${network}): Empty response data`);
+        continue;
+      }
+      
+      if (!Array.isArray(response.data)) {
+        console.error(`Moralis API Error (${network}): Response data is not an array`, response.data);
+        continue;
+      }
+      
+      console.log(`✅ Found ${response.data.length} tokens on ${network}`);
+      
+      // Add network info to each token and validate token data
+      const networkBalances = response.data.map(token => {
+        // Check for missing fields and log them
+        const missingFields = [];
         
-        // Add network info to each token
-        const networkBalances = response.data.map(token => ({
+        if (!token.token_address) missingFields.push('token_address');
+        if (!token.name) missingFields.push('name');
+        if (!token.symbol) missingFields.push('symbol');
+        if (token.decimals === undefined) missingFields.push('decimals');
+        if (token.balance === undefined) missingFields.push('balance');
+        
+        if (missingFields.length > 0) {
+          console.error(`Moralis API Error (${network}): Missing fields in token data: ${missingFields.join(', ')}`, token);
+        }
+        
+        return {
           ...token,
           network,
           usdValue: calculateUsdValue(token.balance, token.decimals, token.usd_price || 0)
-        }));
-        
-        balances.push(...networkBalances);
-      }
+        };
+      });
+      
+      balances.push(...networkBalances);
     } catch (error) {
       console.error(`Error fetching ${network} balances:`, error.message);
       if (error.response) {
@@ -65,26 +89,35 @@ async function getWalletBalances(address, networks) {
         headers: { 'X-API-Key': MORALIS_API_KEY }
       });
       
-      if (response.data && response.data.balance) {
-        console.log(`✅ Found native balance on ${network}: ${response.data.balance}`);
-        
-        // Get approximate native token price
-        const usdPrice = getApproximateNativeTokenPrice(chain);
-        
-        const nativeBalance = {
-          token_address: '0xnative',
-          name: getNativeTokenName(network),
-          symbol: getNativeTokenSymbol(network),
-          decimals: 18,
-          balance: response.data.balance,
-          network,
-          usdValue: calculateUsdValue(response.data.balance, 18, usdPrice)
-        };
-        
-        balances.push(nativeBalance);
+      // Validate the response structure
+      if (!response.data) {
+        console.error(`Moralis API Error (${network}): Empty response data for native balance`);
+        continue;
       }
+      
+      if (!response.data.balance) {
+        console.error(`Moralis API Error (${network}): Missing balance field in native token response`, response.data);
+        continue;
+      }
+      
+      console.log(`✅ Found native balance on ${network}: ${response.data.balance}`);
+      
+      // Get approximate native token price
+      const usdPrice = getApproximateNativeTokenPrice(chain);
+      
+      const nativeBalance = {
+        token_address: '0xnative',
+        name: getNativeTokenName(network),
+        symbol: getNativeTokenSymbol(network),
+        decimals: 18,
+        balance: response.data.balance,
+        network,
+        usdValue: calculateUsdValue(response.data.balance, 18, usdPrice)
+      };
+      
+      balances.push(nativeBalance);
     } catch (error) {
-      console.error(`Error fetching ${network} native balance:`, error.message);
+      console.error(`Error fetching ${network} native balance:`, error);
       if (error.response) {
         console.error(`Status: ${error.response.status}, Data:`, error.response.data);
       }

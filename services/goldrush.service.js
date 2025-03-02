@@ -34,28 +34,60 @@ async function getTokenBalances(address, networks = ['ethereum']) {
                     timeout: 10000 // 10 second timeout
                 });
                 
-                if (response.data && response.data.data && response.data.data.items) {
-                    // Format the response
-                    return response.data.data.items.map(item => {
-                        const network = getNetworkFromChainId(chainId);
-                        return {
-                            name: item.contract_name || 'Unknown Token',
-                            symbol: item.contract_ticker_symbol || '???',
-                            address: item.contract_address,
-                            decimals: item.contract_decimals,
-                            balance: parseFloat(item.balance) / Math.pow(10, item.contract_decimals),
-                            price: item.quote_rate || 0,
-                            value: item.quote || 0,
-                            priceChange24h: item.quote_rate_24h_change || 0,
-                            network: network,
-                            type: item.type || 'cryptocurrency',
-                            icon: getTokenIcon(item.contract_ticker_symbol, item.contract_address, network)
-                        };
-                    }).filter(token => token.balance > 0); // Filter out zero balances
+                // Validate the response structure
+                if (!response.data) {
+                    console.error(`GoldRush API Error (chain ${chainId}): Empty response data`);
+                    return [];
                 }
-                return [];
+                
+                if (response.data.error) {
+                    console.error(`GoldRush API Error (chain ${chainId}):`, response.data.error);
+                    return [];
+                }
+                
+                if (!response.data.data) {
+                    console.error(`GoldRush API Error (chain ${chainId}): Missing data in response`, response.data);
+                    return [];
+                }
+                
+                if (!response.data.data.items) {
+                    console.error(`GoldRush API Error (chain ${chainId}): Missing items in data`, response.data.data);
+                    return [];
+                }
+                
+                // Format the response
+                return response.data.data.items.map(item => {
+                    // Check for missing fields and log them
+                    const missingFields = [];
+                    
+                    if (!item.contract_name) missingFields.push('contract_name');
+                    if (!item.contract_ticker_symbol) missingFields.push('contract_ticker_symbol');
+                    if (!item.contract_address) missingFields.push('contract_address');
+                    if (item.contract_decimals === undefined) missingFields.push('contract_decimals');
+                    if (item.balance === undefined) missingFields.push('balance');
+                    if (item.quote === undefined) missingFields.push('quote');
+                    
+                    if (missingFields.length > 0) {
+                        console.error(`GoldRush API Error (chain ${chainId}): Missing fields in token data: ${missingFields.join(', ')}`, item);
+                    }
+                    
+                    const network = getNetworkFromChainId(chainId);
+                    return {
+                        name: item.contract_name || 'Unknown Token',
+                        symbol: item.contract_ticker_symbol || '???',
+                        address: item.contract_address,
+                        decimals: item.contract_decimals || 18, // Default to 18 if missing
+                        balance: parseFloat(item.balance || '0') / Math.pow(10, item.contract_decimals || 18),
+                        price: item.quote_rate || 0,
+                        value: item.quote || 0,
+                        priceChange24h: item.quote_rate_24h ? (item.quote_rate_24h - item.quote_rate) / item.quote_rate * 100 : 0,
+                        network: network,
+                        type: item.native_token ? 'native' : 'cryptocurrency',
+                        icon: getTokenIcon(item.contract_ticker_symbol, item.contract_address, network)
+                    };
+                }).filter(token => token.balance > 0); // Filter out zero balances
             } catch (error) {
-                console.error(`Error fetching balances for chain ${chainId}:`, error.message);
+                console.error(`Error fetching balances for chain ${chainId}:`, error);
                 return []; // Return empty array for this chain
             }
         });

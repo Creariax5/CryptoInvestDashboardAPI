@@ -61,28 +61,58 @@ async function getWalletBalances(address, networks = ['ethereum']) {
             timeout: 10000 // 10 second timeout
         });
         
-        // Check if the response contains valid data
-        if (response.data && response.data.result && response.data.result.assets) {
-            // Format the response
-            return response.data.result.assets.map(asset => {
-                const network = getNetworkFromAnkrBlockchain(asset.blockchain);
-                return {
-                    name: asset.tokenName || 'Unknown Token',
-                    symbol: asset.tokenSymbol || '???',
-                    address: asset.tokenAddress || '',
-                    decimals: asset.tokenDecimals,
-                    balance: parseFloat(asset.balance),
-                    price: asset.tokenPrice || 0,
-                    value: asset.balanceUsd || 0,
-                    priceChange24h: 0, // Ankr doesn't provide price change data
-                    network: network,
-                    type: asset.tokenType === 'NATIVE' ? 'native' : 'cryptocurrency',
-                    icon: getTokenIcon(asset.tokenSymbol, asset.tokenAddress, network)
-                };
-            }).filter(token => token.balance > 0); // Filter out zero balances
+        // Validate the response structure
+        if (!response.data) {
+            console.error('Ankr API Error: Empty response data');
+            return [];
         }
         
-        return [];
+        if (response.data.error) {
+            console.error('Ankr API Error:', response.data.error);
+            return [];
+        }
+        
+        if (!response.data.result) {
+            console.error('Ankr API Error: Missing result in response', response.data);
+            return [];
+        }
+        
+        if (!response.data.result.assets) {
+            console.error('Ankr API Error: Missing assets in result', response.data.result);
+            return [];
+        }
+        
+        // Format the response
+        return response.data.result.assets.map(asset => {
+            // Check for missing fields and log them
+            const missingFields = [];
+            
+            if (!asset.blockchain) missingFields.push('blockchain');
+            if (!asset.tokenName) missingFields.push('tokenName');
+            if (!asset.tokenSymbol) missingFields.push('tokenSymbol');
+            if (asset.tokenDecimals === undefined) missingFields.push('tokenDecimals');
+            if (!asset.balance) missingFields.push('balance');
+            
+            if (missingFields.length > 0) {
+                console.error(`Ankr API: Missing fields in asset data: ${missingFields.join(', ')}`, asset);
+            }
+            
+            const network = getNetworkFromAnkrBlockchain(asset.blockchain || 'unknown');
+            
+            return {
+                name: asset.tokenName || 'Unknown Token',
+                symbol: asset.tokenSymbol || '???',
+                address: asset.tokenAddress || '',
+                decimals: asset.tokenDecimals || 18, // Default to 18 if missing
+                balance: parseFloat(asset.balance || '0'),
+                price: asset.tokenPrice || 0,
+                value: asset.balanceUsd || 0,
+                priceChange24h: 0, // Ankr doesn't provide price change data
+                network: network,
+                type: asset.tokenType === 'NATIVE' ? 'native' : 'cryptocurrency',
+                icon: getTokenIcon(asset.tokenSymbol, asset.tokenAddress, network)
+            };
+        }).filter(token => token.balance > 0); // Filter out zero balances
     } catch (error) {
         console.error('Error in getWalletBalances:', error);
         throw error;

@@ -3,7 +3,7 @@ const axios = require('axios');
 
 // Configuration
 const API_BASE_URL = 'http://localhost:3000'; // Change if your server runs on a different port
-const TEST_WALLET_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Vitalik's wallet
+const TEST_WALLET_ADDRESS = '0x29eA4918B83223F1EEc45F242d2D96A293B2FCF3'; // Vitalik's wallet
 const NETWORKS = 'ethereum,polygon,arbitrum'; // Networks to test
 
 /**

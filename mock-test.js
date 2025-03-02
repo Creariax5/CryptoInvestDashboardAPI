@@ -15,7 +15,7 @@ async function testAnkrService() {
     console.log('====== Testing Ankr Advanced API Service ======');
     
     // Test wallet address (Vitalik's wallet)
-    const testAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+    const testAddress = '0x29eA4918B83223F1EEc45F242d2D96A293B2FCF3';
     const networks = ['ethereum', 'polygon', 'arbitrum'];
     
     console.log(`Wallet Address: ${testAddress}`);

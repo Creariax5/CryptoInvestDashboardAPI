@@ -4,6 +4,7 @@ const { validateAddress } = require('../utils/validation-utils');
 const moralisService = require('../services/moralis.service');
 const portfolioService = require('../services/portfolio.service');
 const feesService = require('../services/fees.service');
+const goldrushService = require('../services/goldrush.service');
 
 /**
  * Get comprehensive wallet dashboard data
@@ -13,7 +14,7 @@ const feesService = require('../services/fees.service');
  */
 async function getDashboardData(req, res, next) {
   try {
-    const { address, networks = 'ethereum,polygon,bsc,optimism,arbitrum' } = req.query;
+    const { address, networks = 'ethereum,polygon,bsc,optimism,arbitrum', provider = 'moralis' } = req.query;
     
     if (!address) {
       return res.status(400).json({ error: 'Wallet address is required' });
@@ -26,9 +27,19 @@ async function getDashboardData(req, res, next) {
     
     // Get data from different services in parallel
     try {
+      // Determine which service to use for wallet balances
+      let walletBalancesPromise;
+      
+      if (provider.toLowerCase() === 'goldrush') {
+        walletBalancesPromise = goldrushService.getTokenBalances(address, networkArray);
+      } else {
+        // Default to Moralis
+        walletBalancesPromise = moralisService.getWalletBalances(address, networkArray);
+      }
+      
       const [walletBalances, defiPositions, transactions, feeData] = await Promise.all([
-        moralisService.getWalletBalances(address, networkArray).catch(error => {
-          console.warn("Continuing with empty wallet balances due to error:", error.message);
+        walletBalancesPromise.catch(error => {
+          console.warn(`Continuing with empty wallet balances from ${provider} due to error:`, error.message);
           return [];
         }),
         
@@ -86,7 +97,8 @@ async function getDashboardData(req, res, next) {
             defiPositions: generateRandomPercentage(),
             cryptoAssets: generateRandomPercentage(),
             totalFeesPaid: generateRandomPercentage(),
-          }
+          },
+          dataProvider: provider.toLowerCase() // Include the data provider in the response
         },
         walletBalances: sortByUsdValue(walletBalances),
         defiPositions,

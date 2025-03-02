@@ -89,51 +89,91 @@ async function getTokenBalancesForNetwork(address, network, apiUrl) {
             timeout: 10000 // 10 second timeout
         });
         
-        // Check if the response contains valid data
-        if (response.data && response.data.result && response.data.result.tokenBalances) {
-            const tokenBalances = response.data.result.tokenBalances;
-            
-            // Get token metadata for each token
-            const tokenMetadataPromises = tokenBalances.map(async (token) => {
-                if (parseFloat(token.tokenBalance) === 0) return null;
-                
-                try {
-                    const metadata = await getTokenMetadata(token.contractAddress, network, apiUrl);
-                    if (!metadata) return null;
-                    
-                    const balance = parseFloat(token.tokenBalance) / Math.pow(10, metadata.decimals);
-                    
-                    // Get token price (this would require additional API calls to price feeds)
-                    // For simplicity, we're not implementing price fetching here
-                    const price = 0;
-                    const value = 0;
-                    
-                    return {
-                        name: metadata.name || 'Unknown Token',
-                        symbol: metadata.symbol || '???',
-                        address: token.contractAddress,
-                        decimals: metadata.decimals,
-                        balance: balance,
-                        price: price,
-                        value: value,
-                        priceChange24h: 0,
-                        network: getNetworkDisplayName(network),
-                        type: 'cryptocurrency',
-                        icon: getTokenIcon(metadata.symbol, token.contractAddress, network)
-                    };
-                } catch (error) {
-                    console.error(`Error getting metadata for token ${token.contractAddress}:`, error.message);
-                    return null;
-                }
-            });
-            
-            const tokenMetadata = await Promise.all(tokenMetadataPromises);
-            return tokenMetadata.filter(token => token !== null);
+        // Validate the response structure
+        if (!response.data) {
+            console.error(`Alchemy API Error (${network}): Empty response data`);
+            return [];
         }
         
-        return [];
+        if (response.data.error) {
+            console.error(`Alchemy API Error (${network}):`, response.data.error);
+            return [];
+        }
+        
+        if (!response.data.result) {
+            console.error(`Alchemy API Error (${network}): Missing result in response`, response.data);
+            return [];
+        }
+        
+        if (!response.data.result.tokenBalances) {
+            console.error(`Alchemy API Error (${network}): Missing tokenBalances in result`, response.data.result);
+            return [];
+        }
+        
+        const tokenBalances = response.data.result.tokenBalances;
+        
+        // Get token metadata for each token
+        const tokenMetadataPromises = tokenBalances.map(async (token) => {
+            if (!token.tokenBalance) {
+                console.error(`Alchemy API Error (${network}): Missing tokenBalance field`, token);
+                return null;
+            }
+            
+            if (parseFloat(token.tokenBalance) === 0) return null;
+            
+            try {
+                if (!token.contractAddress) {
+                    console.error(`Alchemy API Error (${network}): Missing contractAddress field`, token);
+                    return null;
+                }
+                
+                const metadata = await getTokenMetadata(token.contractAddress, network, apiUrl);
+                
+                if (!metadata) {
+                    console.error(`Alchemy API Error (${network}): Failed to fetch metadata for token`, token.contractAddress);
+                    return null;
+                }
+                
+                const missingMetadataFields = [];
+                if (!metadata.name) missingMetadataFields.push('name');
+                if (!metadata.symbol) missingMetadataFields.push('symbol');
+                if (metadata.decimals === undefined) missingMetadataFields.push('decimals');
+                
+                if (missingMetadataFields.length > 0) {
+                    console.error(`Alchemy API Error (${network}): Missing metadata fields: ${missingMetadataFields.join(', ')} for token ${token.contractAddress}`, metadata);
+                }
+                
+                // Calculate token balance using the token's decimals
+                const decimals = metadata.decimals || 18;
+                const balance = parseInt(token.tokenBalance, 16) / Math.pow(10, decimals);
+                
+                // Format the token data
+                return {
+                    name: metadata.name || 'Unknown Token',
+                    symbol: metadata.symbol || '???',
+                    address: token.contractAddress,
+                    decimals: decimals,
+                    balance: balance,
+                    price: 0, // Alchemy doesn't provide price data
+                    value: 0, // We don't have price data to calculate value
+                    priceChange24h: 0,
+                    network: getNetworkDisplayName(network),
+                    type: 'cryptocurrency',
+                    icon: getTokenIcon(metadata.symbol, token.contractAddress, network)
+                };
+            } catch (error) {
+                console.error(`Error processing token metadata for ${token.contractAddress} on ${network}:`, error.message);
+                return null;
+            }
+        });
+        
+        // Wait for all metadata requests to complete
+        const tokens = await Promise.all(tokenMetadataPromises);
+        
+        // Filter out null values and return
+        return tokens.filter(token => token !== null);
     } catch (error) {
-        console.error(`Error in getTokenBalancesForNetwork for ${network}:`, error.message);
+        console.error(`Error in getTokenBalancesForNetwork for ${network}:`, error);
         return [];
     }
 }
@@ -163,38 +203,48 @@ async function getNativeBalanceForNetwork(address, network, apiUrl) {
             timeout: 5000 // 5 second timeout
         });
         
-        // Check if the response contains valid data
-        if (response.data && response.data.result) {
-            const balance = parseInt(response.data.result, 16) / 1e18; // Convert from wei to ether
-            
-            if (balance === 0) return null;
-            
-            // Get native token info
-            const nativeToken = getNativeTokenInfo(network);
-            
-            // Get token price (this would require additional API calls to price feeds)
-            // For simplicity, we're not implementing price fetching here
-            const price = 0;
-            const value = 0;
-            
-            return {
-                name: nativeToken.name,
-                symbol: nativeToken.symbol,
-                address: '',
-                decimals: 18,
-                balance: balance,
-                price: price,
-                value: value,
-                priceChange24h: 0,
-                network: getNetworkDisplayName(network),
-                type: 'native',
-                icon: nativeToken.icon
-            };
+        // Validate the response structure
+        if (!response.data) {
+            console.error(`Alchemy API Error (${network}): Empty response data for native balance`);
+            return null;
         }
         
-        return null;
+        if (response.data.error) {
+            console.error(`Alchemy API Error (${network}): Error fetching native balance:`, response.data.error);
+            return null;
+        }
+        
+        if (!response.data.result) {
+            console.error(`Alchemy API Error (${network}): Missing result in native balance response`, response.data);
+            return null;
+        }
+        
+        const balance = parseInt(response.data.result, 16) / 1e18; // Convert from wei to ether
+            
+        // Get native token info (symbol, name, etc.)
+        const tokenInfo = getNativeTokenInfo(network);
+        
+        if (!tokenInfo) {
+            console.error(`Alchemy API Error (${network}): Could not get native token info`);
+            return null;
+        }
+        
+        // Format the token data
+        return {
+            name: tokenInfo.name,
+            symbol: tokenInfo.symbol,
+            address: '',
+            decimals: 18,
+            balance: balance,
+            price: 0, // We would need to fetch this from a price feed
+            value: 0, // We would need price data to calculate this
+            priceChange24h: 0,
+            network: getNetworkDisplayName(network),
+            type: 'native',
+            icon: tokenInfo.icon
+        };
     } catch (error) {
-        console.error(`Error in getNativeBalanceForNetwork for ${network}:`, error.message);
+        console.error(`Error in getNativeBalanceForNetwork for ${network}:`, error);
         return null;
     }
 }
@@ -224,14 +274,38 @@ async function getTokenMetadata(contractAddress, network, apiUrl) {
             timeout: 5000 // 5 second timeout
         });
         
-        // Check if the response contains valid data
-        if (response.data && response.data.result) {
-            return response.data.result;
+        // Validate the response structure
+        if (!response.data) {
+            console.error(`Alchemy API Error (${network}): Empty response data for token metadata of ${contractAddress}`);
+            return null;
         }
         
-        return null;
+        if (response.data.error) {
+            console.error(`Alchemy API Error (${network}): Error fetching token metadata for ${contractAddress}:`, response.data.error);
+            return null;
+        }
+        
+        if (!response.data.result) {
+            console.error(`Alchemy API Error (${network}): Missing result in token metadata response for ${contractAddress}`, response.data);
+            return null;
+        }
+        
+        // Check for missing fields in the metadata
+        const metadata = response.data.result;
+        const missingFields = [];
+        
+        if (!metadata.name) missingFields.push('name');
+        if (!metadata.symbol) missingFields.push('symbol');
+        if (metadata.decimals === undefined) missingFields.push('decimals');
+        if (metadata.logo === undefined) missingFields.push('logo');
+        
+        if (missingFields.length > 0) {
+            console.error(`Alchemy API Warning (${network}): Incomplete metadata for token ${contractAddress}, missing: ${missingFields.join(', ')}`, metadata);
+        }
+        
+        return metadata;
     } catch (error) {
-        console.error(`Error in getTokenMetadata for ${contractAddress}:`, error.message);
+        console.error(`Error in getTokenMetadata for ${contractAddress} on ${network}:`, error);
         return null;
     }
 }
